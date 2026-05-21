@@ -273,16 +273,23 @@ $(document).ready(function () {
 
 		if (piIdsToQuery.length === 0) return;
 		
-		// Ensure orgUnit and period
-		const selectedOrgUnit = document.getElementById("orgUnitList").value;
-		const selectedPeriod = document.getElementById("period").value;
-		
 		// Date conversion logic
-		const isoPe = getIsoDatesFromBsMonth(selectedPeriod);
+		//const isoPe = getIsoDatesFromBsMonth(selectedPeriod);
+		const isoPe = getIsoStartAndEndDatesFromBsMonth(selectedPeriod);
+
 		
+		/*
+		// ISO Daily Periods - when used getIsoDatesFromBSMonth
 		const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
 			`&filter=ou:${selectedOrgUnit}` +
 			`&filter=pe:${isoPe.join(";")}` +
+			`&outputIdScheme=UID`;
+		*/
+
+		// ISO startDate and EndDate - when used getIsoStartAndEndDatesFromBsMonth
+		const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
+			`&filter=ou:${selectedOrgUnit}` +
+			`&&startDate=${isoPe.startDate}` + `&endDate=${isoPe.endDate}` + 
 			`&outputIdScheme=UID`;
 
 		try {
@@ -364,12 +371,23 @@ $(document).ready(function () {
 
 		if (piIdsToQuery.length === 0) return;
 		
-		// Date conversion logic
-		const isoPe = getIsoDatesFromBsMonth(selectedPeriod);
+		/// Date conversion logic
+		//const isoPe = getIsoDatesFromBsMonth(selectedPeriod);
+		const isoPe = getIsoStartAndEndDatesFromBsMonth(selectedPeriod);
+
 		
+		/*
+		// ISO Daily Periods - when used getIsoDatesFromBSMonth
 		const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
 			`&filter=ou:${selectedOrgUnit}` +
 			`&filter=pe:${isoPe.join(";")}` +
+			`&outputIdScheme=UID`;
+		*/
+
+		// ISO startDate and EndDate - when used getIsoStartAndEndDatesFromBsMonth
+		const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
+			`&filter=ou:${selectedOrgUnit}` +
+			`&&startDate=${isoPe.startDate}` + `&endDate=${isoPe.endDate}` + 
 			`&outputIdScheme=UID`;
 
 		try {
@@ -506,7 +524,7 @@ $(document).ready(function () {
 			"endDate": adEndDate
 		};
 	}
-	
+
 	// ------------------ EVENTS ------------------
 	$("#prev").click(function () {
 		var year = parseInt($("#period").val().substring(0,4))-1;
