@@ -1,10 +1,9 @@
 $(document).ready(function () {
 	const todayNP = NepaliFunctions.BS.GetCurrentDate();
-	console.log(todayNP);
+
 	const npMonth = ((todayNP.month-1) == 0)? 12 : todayNP.month;
 	const npYear = ((todayNP.month-1) == 0) ? (todayNP.year-1) : todayNP.year;
-	console.log(npYear + " " + npMonth);
-	
+		
 	const hmisBaseUrl = "https://hmis.gov.np/hmis";
 	$("#hmisBaseUrl").html(hmisBaseUrl);
 	
@@ -105,6 +104,7 @@ $(document).ready(function () {
 	function loadPeriod(year) {
 		if(year <= npYear){
 			const months = ["Baisakh", "Jestha", "Asar", "Shrawan", "Bhadra", "Ashwin", "Kartik", "Mangsir", "Paush", "Magh", "Falgun", "Chaitra"];
+			
 			$("#period").empty();
 			let start = (year == npYear) ? npMonth-1 : 12;
 			for (let m = start; m >= 1; m--) {
@@ -114,6 +114,7 @@ $(document).ready(function () {
 				);
 			}
 		}
+
 		// Set global period variables
 		selectedPeriod = $("#period").val();
 		selectedPeriodName = $("#period option:selected").text();
@@ -122,17 +123,21 @@ $(document).ready(function () {
 	async function getAvailableDatasets() {
 		try {
 			console.log("Getting available datasets from HMIS");
+			
+			const hmisUrl = `${hmisBaseUrl}/api/dataSets?fields=name,id&paging=false`;
+			const res = await apiGet(
+				hmisUrl, { headers: getAuthHeader() }
+			);
+
 			$("#datasetList").empty();
-			// Fixed to 3 GESI datasets
-			$("#datasetList").append(
-				$("<option></option>").text("21 Geriatric Services").val("Gcy5LFfxKPi")
-			);
-			$("#datasetList").append(
-				$("<option></option>").text("22 One-stop Crisis Management Center").val("yojJae2XSYZ")
-			);
-			$("#datasetList").append(
-				$("<option></option>").text("23 Social Security Unit").val("OQ4e1903ugD")
-			);
+
+			res.dataSets.forEach(ds => {
+				if(ds.name.substring(0,2) !== "00"){
+					$("#datasetList").append(
+						$("<option></option>").text(ds.name).val(ds.id)
+					);
+				}
+			});
 	
 			// Set global variables for immediate action
 			selectedDataset = $("#datasetList").val();
@@ -234,6 +239,108 @@ $(document).ready(function () {
 	}
 
 	async function fillLocalData() {
+		/*
+		This function requires that aggregateExportCategoryOptionCombo attribute of program
+		indicator is mapped to associated categoryOptionComboId of the targeted data element
+
+		It also requires that each program indicator is configured custom attribute with ID 
+		b8KbU93phhz and contains the dataelementid of targeted remote dataset. 
+		*/
+		const inputs = $("#mainFormContainer").find("input[id], select[id], textarea[id]");
+		const piIdsToQuery = [];
+
+		console.log("Filtering program indicators to fetch data...");
+
+		inputs.each(function () {
+			const idParts = $(this).attr("id").split("-");
+			if (idParts.length !== 3) return;
+
+			const deId = idParts[0];
+
+			programIndicators.forEach(pi => {
+				pi.attributeValues.forEach(av => {
+					if (
+						av.attribute.id === "b8KbU93phhz" &&
+						av.value === deId
+					) {
+						if (!piIdsToQuery.includes(pi.id)) {
+							piIdsToQuery.push(pi.id);
+						}
+					}
+				});
+			});
+		});
+
+		if (piIdsToQuery.length === 0) return;
+		
+		// Ensure orgUnit and period
+		const selectedOrgUnit = document.getElementById("orgUnitList").value;
+		const selectedPeriod = document.getElementById("period").value;
+		
+		// Date conversion logic
+		const isoPe = getIsoDatesFromBsMonth(selectedPeriod);
+		
+		const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
+			`&filter=ou:${selectedOrgUnit}` +
+			`&filter=pe:${isoPe.join(";")}` +
+			`&outputIdScheme=UID`;
+
+		try {
+			console.log("Getting local program indicator data");
+			const res = await apiGet(analyticsUrl);
+			const dataValues = [];
+			
+			console.log("Setting data in respecitve input fields and preparing dataValues...");
+			res.rows.forEach(row => {
+				const dataPi = row[0];
+				const dataValue = parseInt(row[1]);
+
+				const pi = programIndicators.find(p => p.id === dataPi);
+				const cocId = pi.aggregateExportCategoryOptionCombo;
+
+				const filteredPi = pi.attributeValues.find(
+					av => av.attribute.id === "b8KbU93phhz"
+				);
+
+				const deId = filteredPi ? filteredPi.value : null;
+				const el = document.getElementById(`${deId}-${cocId}-val`);
+				
+				if(el){
+					el.value = dataValue;
+				}
+				
+				if (!isNaN(dataValue) && dataValue !== 0) {
+					dataValues.push({
+						dataElement: deId,
+						categoryOptionCombo: cocId,
+						value: dataValue
+					});
+				}
+			});
+			
+			console.log("Preparing final JSON...");
+			
+			finalJSON = {
+				dataSet: selectedDataset,
+				orgUnit: hmisOuId,
+				period: selectedPeriod,
+				completeDate: new Date().toISOString().substring(0, 10),
+				dataValues: dataValues
+			};
+
+		} catch (e) {
+			showError("Error getting program indicator data...");
+		}
+	}
+
+	async function fillLocalDataWithAggregateExportCategoryOptionCombo() {
+		/*
+		This function reads data element and category option combination directly from
+		aggregateExportCategoryOptionCombo attribute of program indicator.
+
+		This rquires that aggregateExportCategoryOptionCombo must have data element
+		and categoryoptioncombination in the joined by '-' (xkhkxd1ds-kdsirlcdk)
+		*/
 
 		const inputs = $("#mainFormContainer").find("input[id], select[id], textarea[id]");
 		const piIdsToQuery = [];
@@ -402,9 +509,12 @@ $(document).ready(function () {
 
 		const encodedCredentials = btoa(user + ':' + pass);
 		const res = await apiGet(
-			`${hmisBaseUrl}/api/ping`,
+			`${hmisBaseUrl}/api/me.json`,
 			{ headers: 	{ 'Authorization': 'Basic ' + encodedCredentials } }
 		);
+
+
+
 		sessionStorage.setItem("tempCreds", encodedCredentials);
 
 		await init();
