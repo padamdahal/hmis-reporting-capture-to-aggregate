@@ -487,6 +487,26 @@ $(document).ready(function () {
 		return dates;
 	}
 	
+	function getIsoStartAndEndDatesFromBsMonth(period) {
+		console.log("Generating ISO start and end dates for the selected month...");
+		
+		const year = period.substring(0, 4);
+		const month = period.substring(4, 6);
+
+		const dates = [];
+		let start = 1;
+		const bsStartDate = `${year}-${month}-${String(start).padStart(2, '0')}`;
+		const adStartDate = (NepaliFunctions.BS.ValidateDate(bsStartDate)) ? NepaliFunctions.BS2AD(bsStartDate): null;
+
+		const bsEndDate = `${year}-${month}-${String(NepaliFunctions.BS.GetDaysInMonth(year,month)).padStart(2, '0')}`;
+		const adEndDate = (NepaliFunctions.BS.ValidateDate(bsEndDate)) ? NepaliFunctions.BS2AD(bsEndDate): null;
+		
+		return {
+			"startDate": adStartDate,
+			"endDate": adEndDate
+		};
+	}
+	
 	// ------------------ EVENTS ------------------
 	$("#prev").click(function () {
 		var year = parseInt($("#period").val().substring(0,4))-1;
