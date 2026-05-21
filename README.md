@@ -1,4 +1,4 @@
-# HMIS Reporting App (GESI)
+# HMIS Reporting App
 ## Build and Deploy
 1. run build.sh
 2. download zip file from build directory
