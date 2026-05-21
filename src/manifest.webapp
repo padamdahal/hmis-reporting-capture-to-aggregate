@@ -1,0 +1,24 @@
+{
+  "launch_path": "index.html",
+  "default_locale": "en",
+  "activities": {
+    "dhis": {
+      "href": "index.html"
+    }
+  },
+  "type": "app",
+  "coreApp": false,
+  "name": "HMIS Reporting",
+  "version": "1.0.0",
+  "description": "HMIS Monthly Reporting App",
+  "developer": {
+    "name": "Padam",
+    "email": "padam.dahal@giz.de",
+    "url": "",
+    "company": ""
+  },
+  "icons": {
+    "48": "img/icon.png"
+  },
+  "manifest_generated_at": ""
+}
