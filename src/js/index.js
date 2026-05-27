@@ -13,6 +13,8 @@ $(document).ready(function () {
 		baseUrl += "/" + pathSegment;
 	}
 
+	console.log(baseUrl);
+	
 	let programIndicators = [];
 	
 	let selectedDataset = $("#datasetList").val();
