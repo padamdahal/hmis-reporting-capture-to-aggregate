@@ -27,6 +27,8 @@ if [ -z "$APP_ZIP" ]; then
   exit 1
 fi
 
+echo "Server URL: $DHIS2_URL"
+
 # ASK FOR CREDENTIALS
 read -p "DHIS2 Username: " USERNAME
 read -s -p "DHIS2 Password: " PASSWORD
@@ -49,11 +51,6 @@ RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" \
 if [ "$RESPONSE" == "200" ] || [ "$RESPONSE" == "201" ]; then
   echo "✅ App deployed successfully"
 else
-  echo "❌ Deployment failed with status $RESPONSE"
+  echo "❌ Deployment failed with status: $RESPONSE"
   exit 1
 fi
-
-#curl -X POST \
-#-u "$USERNAME:$PASSWORD" \
-#-F "file=@${APP_ZIP}" \
-#"https://ocl.hmis.gov.np/ephc/api/apps"
