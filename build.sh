@@ -2,7 +2,7 @@
 
 # Define the target folder and the output zip name
 FOLDER="src"
-OUTPUT="../build/app.zip"
+OUTPUT="../build/hmis-reporting.zip"
 
 # Check if the folder exists
 if [ -d "$FOLDER" ]; then

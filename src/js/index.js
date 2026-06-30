@@ -4,7 +4,7 @@ $(document).ready(function () {
 	const npMonth = todayNP.month - 1 == 0 ? 12 : todayNP.month;
 	const npYear = todayNP.month - 1 == 0 ? todayNP.year - 1 : todayNP.year;
 
-	const hmisBaseUrl = "https://hmis.gov.np/hmis";
+	const hmisBaseUrl = "https://hmis.gov.np/hmisdemo";
 	$("#hmisBaseUrl").html(hmisBaseUrl);
 
 	let baseUrl = window.location.origin;
@@ -27,28 +27,17 @@ $(document).ready(function () {
 	let selectedPeriod = $("#period").val();
 	let selectedPeriodName = $("#period option:selected").text();
 
-	let selectedOrgUnit = $("#orgUnitList").val();
-	let selectedOrgUnitCode = $("#orgUnitList option:selected").attr("data-code");
+	let selectedOrgUnit = null;
+	let selectedOrgUnitCode = null;
 
 	let hmisOuId = null;
 
 	let finalJSON = {};
 
-	/*toastr.options = {
-			positionClass: 'toast-top-right',
-			timeOut:       4000,
-			closeButton:   true,
-			progressBar:   true,
-			newestOnTop:   true,
-			onShown:       function() { toastr.clear() }
-	}*/
-	
-	selection.setListenerFunction(function (e) {
+	/*selection.setListenerFunction(function (e) {
 		selectedOrgUnit = e[0];
-		var selectedOrgUnitName =
-			document.getElementsByClassName("selected")[0].innerHTML;
-		console.log(selectedOrgUnitName);
-		const temp = getSelectedOrgUnitInfo(e[0]);
+		//var selectedOrgUnitName = document.getElementsByClassName("selected")[0].innerHTML;
+		getSelectedOrgUnitInfo(e[0]);
 	});
 
 	// Organization Unit search
@@ -59,9 +48,167 @@ $(document).ready(function () {
 			$("#searchField").val(ui.item.value);
 			selection.findByName();
 		},
+	});*/
+
+	/* OAuth */
+	var OAUTH = {
+		clientId: "ephc",
+		clientSecret: "f9c016052-c436-6d9b-0f4c-e3c0d0dd6fa",
+		baseUrl: hmisBaseUrl,
+		authUrl: hmisBaseUrl + "/uaa/oauth/authorize",
+		tokenUrl: hmisBaseUrl + "/uaa/oauth/token",
+		redirectUri: baseUrl + "/api/apps/HMIS-Reporting/index.html",
+		scope: "ALL",
+	};
+
+	var params = new URLSearchParams(window.location.search);
+	var code = params.get("code");
+	var state = params.get("state");
+	var error = params.get("error");
+
+	if (error) {
+		toastr.error("OAuth error");
+		return;
+	}
+
+	if (code) {
+		// ← came back from DHIS2 with auth code
+		handleOAuthCallback(code, state);
+		return;
+	}
+
+	// Check if already logged in
+	var token = sessionStorage.getItem("access_token");
+	if (token && !isTokenExpired()) {
+		$.ajaxSetup({
+			headers: { Authorization: "Bearer " + token },
+			timeout: 10000,
+		});
+	} else {
+	}
+
+	$(document).on("click", "#btnLogin", function () {
+		var state = Math.random().toString(36).substring(2);
+		sessionStorage.setItem("oauth_state", state);
+
+		var params = new URLSearchParams({
+			response_type: "code",
+			client_id: OAUTH.clientId,
+			redirect_uri: OAUTH.redirectUri,
+			scope: OAUTH.scope,
+			state: state,
+		});
+
+		//window.location.href = OAUTH.authUrl + '?' + params.toString()
+		window.open(OAUTH.authUrl + "?" + params.toString(), "_blank");
 	});
 
-	// ------------------ INIT ------------------
+	// ── Handle callback — exchange code for token ──
+	function handleOAuthCallback(code, state) {
+		var savedState = sessionStorage.getItem("oauth_state");
+
+		if (state !== savedState) {
+			toastr.error("Invalid state. Please try again.");
+			return;
+		}
+
+		sessionStorage.removeItem("oauth_state");
+
+		// Clean URL — remove code and state from address bar
+		window.history.replaceState({}, document.title, window.location.pathname);
+
+		toastr.info("Authenticating...");
+
+		$.ajax({
+			url: "https://ocl.hmis.gov.np/ephc/api/42/routes/LCNvyLXukMq/run",
+			method: "POST",
+			headers: {
+				/*'Authorization': 'Basic ' + btoa(OAUTH.clientId + ':' + OAUTH.clientSecret),*/
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			data: {
+				grant_type: "authorization_code",
+				code: code,
+				redirect_uri: OAUTH.redirectUri,
+			},
+		})
+			.done(function (data) {
+				// Store token
+				sessionStorage.setItem("access_token", data.access_token);
+				sessionStorage.setItem("refresh_token", data.refresh_token);
+				sessionStorage.setItem(
+					"expires_at",
+					Date.now() + data.expires_in * 1000,
+				);
+
+				// Set globally
+				$.ajaxSetup({
+					headers: { Authorization: "Bearer " + data.access_token },
+					timeout: 10000,
+				});
+
+				showToast("Login successful!", "success");
+			})
+			.fail(function (xhr) {
+				toastr.error("Authentication failed");
+			});
+	}
+
+	// ── Token helpers ──
+	function isTokenExpired() {
+		var expiresAt = sessionStorage.getItem("expires_at");
+		if (!expiresAt) return true;
+		return Date.now() > expiresAt - 60 * 1000; // 1 min buffer
+	}
+
+	function refreshAccessToken() {
+		var refreshToken = sessionStorage.getItem("refresh_token");
+		if (!refreshToken) {
+			return;
+		}
+
+		$.ajax({
+			url: OAUTH.tokenUrl,
+			method: "POST",
+			headers: {
+				Authorization:
+					"Basic " + btoa(OAUTH.clientId + ":" + OAUTH.clientSecret),
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			data: {
+				grant_type: "refresh_token",
+				refresh_token: refreshToken,
+			},
+		})
+			.done(function (data) {
+				sessionStorage.setItem("access_token", data.access_token);
+				sessionStorage.setItem(
+					"expires_at",
+					Date.now() + data.expires_in * 1000,
+				);
+				$.ajaxSetup({
+					headers: { Authorization: "Bearer " + data.access_token },
+				});
+			})
+			.fail(function () {
+				sessionStorage.clear();
+				showLogin();
+			});
+	}
+
+	// ── Auto refresh check on every request ──
+	$(document).ajaxSend(function () {
+		if (isTokenExpired()) refreshAccessToken();
+	});
+
+	// ── Logout ──
+	function logout() {
+		sessionStorage.clear();
+		$.ajaxSetup({ headers: {} });
+		showLogin();
+	}
+	/* End OAuth */
+
 	async function init() {
 		$("#mainContent").hide();
 		$("#msgContent").show();
@@ -77,62 +224,78 @@ $(document).ready(function () {
 			$("#loadData").show();
 
 			await Promise.all([
-				initOrgUnitTree(),
 				loadUserOrgUnitList(),
 				getSelectedOrgUnitInfo(),
 				getAvailableDatasets(),
-				getLocalProgramIndicators()
+				getLocalProgramIndicators(),
 			]);
 		} else {
+			toastr.info("Please login using your HMIS credentials");
 			$("#loginPanel").show();
 			$("#showLoginBtn").hide();
 			$("#loadData").hide();
 		}
 	}
 
-	// ------------------ HELPERS ------------------
 	function getAuthHeader() {
 		return {
 			Authorization: "Basic " + sessionStorage.getItem("tempCreds"),
 		};
 	}
 
+	async function loginToTargetSystem(user, pass) {
+		const encodedCredentials = btoa(user + ":" + pass);
+		const res = await apiGet(`${hmisBaseUrl}/api/me.json`, {
+			headers: { Authorization: "Basic " + encodedCredentials },
+		});
+
+		if (res) {
+			//sessionStorage.setItem("tempCreds", encodedCredentials);
+			sessionStorage.setItem("tempCreds", encodedCredentials);
+			toastr.success("Login successful");
+
+			await init();
+
+			$("#loginPanel").hide();
+			$("#showLoginBtn").show();
+			$("#loadDataPanel").show();
+		} else {
+			toastr.error("Login failed. Please check your credentials.");
+		}
+	}
+
 	async function apiGet(url, options = {}) {
-		toastr.info('Please wait...');
+		console.log(options);
 		return $.ajax({
 			url,
 			method: "GET",
 			contentType: options.contentType || "application/json",
 			headers: options.headers || {},
-			timeout: options.timeout || 10000
-		}).fail(function(xhr, textStatus) {
-				if (textStatus === 'timeout') {
-						toastr.error('Request timed out:', url)
-				} else {
-					toastr.error('Error getting data:', xhr.responseText)
+			timeout: options.timeout || 10000,
+		}).fail(function (xhr, textStatus) {
+			if (textStatus === "timeout") {
+				toastr.error(`Request timed out: ${url}`, "Request Timed Out");
+			} else {
+				toastr.error(`Error getting data: ${url}`, "Error");
 			}
 		});
 	}
 
 	async function apiPost(url, data, options = {}) {
-		toastr.info('Sending your data...');
+		toastr.info("Sending your data...");
 		return $.ajax({
 			url,
 			method: "POST",
 			contentType: "application/json",
 			headers: options.headers || {},
 			data: JSON.stringify(data),
-		}).fail(function(xhr, textStatus) {
-					if (textStatus === 'timeout') {
-							toastr.error('Request timed out:', url)
-					}else{
-						toastr.error('Error submitting data:', xhr.responseText)
-					}
-			});;
-	}
-
-	function showError() {
-		$("#loginError").show();
+		}).fail(function (xhr, textStatus) {
+			if (textStatus === "timeout") {
+				toastr.error("Request timed out:", url);
+			} else {
+				toastr.error(`${xhr.responseText}`, "Error Submitting Data");
+			}
+		});
 	}
 
 	function loadPeriod(year) {
@@ -174,7 +337,9 @@ $(document).ready(function () {
 			console.log("Getting available datasets from HMIS");
 
 			const hmisUrl = `${hmisBaseUrl}/api/dataSets?fields=name,id&paging=false`;
-			const res = await apiGet(hmisUrl, { headers: getAuthHeader() });
+			const res = await apiGet(hmisUrl, {
+				headers: getAuthHeader(),
+			});
 
 			$("#datasetList").empty();
 
@@ -190,7 +355,7 @@ $(document).ready(function () {
 			selectedDataset = $("#datasetList").val();
 			selectedDatasetTitle = $("#datasetList option:selected").text();
 		} catch (e) {
-			showError("Error getting data sets.");
+			console.log("Error getting data sets.");
 		}
 	}
 
@@ -206,51 +371,63 @@ $(document).ready(function () {
 				await getRemoteOrgUnitIdByCode(res.code);
 			}
 		} catch (e) {
-			showError();
+			toastr.error("Error getting selected OrgUnit info...");
 		}
 	}
 
 	async function loadUserOrgUnitList() {
 		$("#orgUnitList").empty();
-
+		var $container = $("#orgUnitTree");
+		
 		try {
 			const res = await apiGet(
-				`${baseUrl}/api/me.json?fields=organisationUnits[id,name,code]`,
+				`${baseUrl}/api/me.json?fields=organisationUnits[id,name,displayName,code,children::isNotEmpty]`,
 			);
 
 			if (!res) {
 				console.log("Could not get user OrgUnit info...");
 			} else {
-				res.organisationUnits.forEach((ou) => {
+				// Build dropdown list
+				/*res.organisationUnits.forEach((ou) => {
 					$("#orgUnitList").append(
 						$("<option></option>")
 							.text(ou.name)
 							.val(ou.id)
 							.attr("data-code", ou.code),
 					);
+				});*/
+				
+				// ---------------------------------
+				// Build orgUnit tree
+				var $ul = $('<ul class="ou-tree">');
+
+				// Render each root org unit
+				res.organisationUnits.forEach(function (ou) {
+					var $li = buildOrgUnitNode(ou);
+					$ul.append($li);
 				});
 
-				selectedOrgUnit = $("#orgUnitList").val();
+				$container.append($ul);
+				// ---------------------------------
 			}
 		} catch (e) {
-			showError();
+			toastr.error("Error loading OrgUnit list...");
 		}
 	}
 
 	async function getRemoteOrgUnitIdByCode(code) {
-		if (!code) return null;
-		//console.log(code);
 		try {
 			const res = await apiGet(
 				`${hmisBaseUrl}/api/organisationUnits?filter=code:eq:${code}&fields=id,name,code`,
-				{ headers: getAuthHeader() },
+				{
+					headers: getAuthHeader(),
+				},
 			);
 
 			if (res.organisationUnits && res.organisationUnits.length > 0) {
-				const remoteId = res.organisationUnits[0].id;
-
-				// Set global variable
-				hmisOuId = remoteId;
+				hmisOuId = res.organisationUnits[0].id;
+			} else {
+				toastr.info(`HMIS does not have OrgUnit with code: ${code}`);
 			}
 		} catch (e) {
 			console.error("Error fetching remote OU", e);
@@ -294,9 +471,9 @@ $(document).ready(function () {
 				.prop("disabled", true);
 
 			// Get HMIS orgUnit ID for completeness check and data submission
-			await getRemoteOrgUnitIdByCode(
+			/*await getRemoteOrgUnitIdByCode(
 				$("#orgUnitList option:selected").data("code"),
-			);
+			);*/
 
 			// Fill the local data in the form for validation
 			await fillLocalData();
@@ -314,6 +491,7 @@ $(document).ready(function () {
 	}
 
 	async function fillLocalData() {
+		toastr.info("Please wait, populating data...");
 		const inputs = $("#mainFormContainer").find(
 			"input[id], select[id], textarea[id]",
 		);
@@ -352,7 +530,7 @@ $(document).ready(function () {
 		if (piIdsToQuery.length === 0) return;
 
 		// const isoPe = getIsoPeriodsByBsMonth(selectedPeriod, 'dailyPeriods');
-		const isoPe = getIsoPeriodsByBsMonth(selectedPeriod, 'startEndDates');
+		const isoPe = getIsoPeriodsByBsMonth(selectedPeriod, "startEndDates");
 
 		/*const analyticsUrl = `${baseUrl}/analytics.json?dimension=dx:${piIdsToQuery.join(";")}` +
 			`&filter=ou:${selectedOrgUnit}` + `&filter=pe:${isoPe.join(";")}` + `&outputIdScheme=UID`;*/
@@ -410,6 +588,7 @@ $(document).ready(function () {
 				completeDate: new Date().toISOString().substring(0, 10),
 				dataValues: dataValues,
 			};
+			console.log(finalJSON);
 		} catch (e) {
 			showError("Error getting program indicator data...");
 		}
@@ -443,7 +622,7 @@ $(document).ready(function () {
 				return;
 			}
 
-			const orgUnit = $("#orgUnitList").val();
+			//const orgUnit = $("#orgUnitList").val();
 			const url = `${hmisBaseUrl}/api/completeDataSetRegistrations?dataSet=${selectedDataset}&period=${selectedPeriod}&orgUnit=${hmisOuId}`;
 			const res = await apiGet(url, { headers: getAuthHeader() });
 			if (
@@ -469,7 +648,8 @@ $(document).ready(function () {
 
 		const year = bsMonth.substring(0, 4);
 		const month = bsMonth.substring(4, 6);
-		if(returnType == 'dailyPeriods'){
+
+		if (returnType == "dailyPeriods") {
 			const dates = [];
 			let day = 1;
 			let continueLoop = true;
@@ -488,7 +668,7 @@ $(document).ready(function () {
 				}
 			}
 			return dates;
-		} else if (returnType == 'startEndDates'){
+		} else if (returnType == "startEndDates") {
 			let start = 1;
 			const bsStartDate = `${year}-${month}-${String(start).padStart(2, "0")}`;
 			const adStartDate = NepaliFunctions.BS.ValidateDate(bsStartDate)
@@ -504,139 +684,14 @@ $(document).ready(function () {
 				startDate: adStartDate,
 				endDate: adEndDate,
 			};
-			
-		}else{
-			toastr.warning('Invalid return type for period');
+		} else {
+			console.log("Invalid return type for period");
 		}
-		
+
 		return dates;
 	}
 
-	/*function getStartAndEndDatesByBsMonth(period) {
-		console.log("Generating ISO start and end dates for the selected month...");
-
-		const year = period.substring(0, 4);
-		const month = period.substring(4, 6);
-
-		let start = 1;
-		const bsStartDate = `${year}-${month}-${String(start).padStart(2, "0")}`;
-		const adStartDate = NepaliFunctions.BS.ValidateDate(bsStartDate)
-			? NepaliFunctions.BS2AD(bsStartDate)
-			: null;
-
-		const bsEndDate = `${year}-${month}-${String(NepaliFunctions.BS.GetDaysInMonth(year, month)).padStart(2, "0")}`;
-		const adEndDate = NepaliFunctions.BS.ValidateDate(bsEndDate)
-			? NepaliFunctions.BS2AD(bsEndDate)
-			: null;
-
-		return {
-			startDate: adStartDate,
-			endDate: adEndDate,
-		};
-	}*/
-
-	/* UI EVENTS */
-	$(document).on("click", "#prev", function () {
-		var year = parseInt($("#period").val().substring(0, 4)) - 1;
-		loadPeriod(year);
-	});
-
-	$(document).on("click", "#next", function () {
-		var year = parseInt($("#period").val().substring(0, 4)) + 1;
-		loadPeriod(year);
-	});
-
-	$(document).on("click", "#loginBtn", async function () {
-		const user = $("#hmisUser").val();
-		const pass = $("#hmisPass").val();
-
-		if (!user || !pass) {
-			alert("Enter username and password");
-			return;
-		}
-
-		const encodedCredentials = btoa(user + ":" + pass);
-		const res = await apiGet(`${hmisBaseUrl}/api/me.json`, {
-			headers: { Authorization: "Basic " + encodedCredentials },
-		});
-
-		console.log(res);
-
-		sessionStorage.setItem("tempCreds", encodedCredentials);
-
-		await init();
-
-		$("#loginPanel").hide();
-		$("#showLoginBtn").show();
-		$("#loadDataPanel").show();
-	});
-
-	$(document).on("click", "#loadData", async function () {
-		$(this).text("Loading...");
-		$("#loadData").prop("disabled", true);
-		await loadSelectedDatasetForm();
-	});
-
-	$(document).on("click", "#showLoginBtn", function () {
-		$("#loginPanel").show();
-		$(this).hide();
-	});
-
-	$(document).on("click", "#hideLoginBtn", function () {
-		$("#loginPanel").hide();
-		$("#showLoginBtn").show();
-	});
-
-	$(document).on("change", "#period", function () {
-		selectedPeriod = $("#period").val();
-	});
-
-	$(document).on("change", "#orgUnitList", async function () {
-		selectedOrgUnit = $("#orgUnitList").val();
-		selectedOrgUnitCode = $("#orgUnitList option:selected").attr("data-code");
-		await getRemoteOrgUnitIdByCode(selectedOrgUnitCode);
-	});
-
-	$(document).on("change", "#datasetList", function () {
-		selectedDataset = $("#datasetList").val();
-		selectedDatasetTitle = $("#datasetList option:selected").text();
-	});
-
-	$(document).on("click", "#submitDataBtn", async function () {
-		await submitData();
-	});
-
-	/* OrgUnit Tree */
-	// Step 1: Get root org units from me.json
-	function initOrgUnitTree() {
-		$.ajax({
-			url: `${baseUrl}/api/me.json`,
-			data: {
-				fields: "organisationUnits[id,displayName,code,children::isNotEmpty]",
-				order: "displayName:asc",
-			},
-			timeout: 20000
-		}).done(function (data) {
-				var $container = $("#orgUnitTree");
-				var $ul = $('<ul class="ou-tree">');
-
-				// Render each root org unit
-				data.organisationUnits.forEach(function (ou) {
-					var $li = buildOrgUnitNode(ou);
-					$ul.append($li);
-				});
-
-				$container.append($ul);
-			}).fail(function(xhr, textStatus) {
-					if (textStatus === 'timeout') {
-							$("#orgUnitTree").text("Request timed out. Please check your connection and try again.")
-					} else {
-							$("#orgUnitTree").text("Failed to load organisation units.")
-					}
-			})
-	}
-
-	// Step 2: Build a single node
+	// Build a single orgUnit node
 	function buildOrgUnitNode(ou) {
 		var $li = $('<li class="ou-item">');
 		var $row = $(
@@ -677,7 +732,7 @@ $(document).ready(function () {
 		return $li;
 	}
 
-	// Step 3: Load children lazily
+	// Load orgUnit children lazily
 	function loadChildren(parentId, $container) {
 		$container.html(
 			'<span style="color:#aaa; font-size:11px; padding-left:8px;">Loading...</span>',
@@ -690,11 +745,11 @@ $(document).ready(function () {
 					"id,displayName,code,children[id,displayName,code,children::isNotEmpty]",
 				paging: false,
 			},
-		})
-			.done(function (data) {
+		}).done(function (data) {
 				$container.empty();
 				var $ul = $('<ul class="ou-tree">');
-
+				//Sort by name
+				data.children.sort((a, b) => a.displayName.localeCompare(b.displayName, undefined, { numeric: true }));
 				data.children.forEach(function (ou) {
 					$ul.append(buildOrgUnitNode(ou));
 				});
@@ -708,18 +763,83 @@ $(document).ready(function () {
 			});
 	}
 
-	// Step 4: Handle selection
+	// previous and next year
+	$(document).on("click", "#prev", function () {
+		var year = parseInt($("#period").val().substring(0, 4)) - 1;
+		loadPeriod(year);
+	});
+
+	$(document).on("click", "#next", function () {
+		var year = parseInt($("#period").val().substring(0, 4)) + 1;
+		loadPeriod(year);
+	});
+
+	$(document).on("click", "#loginBtn", async function () {
+		$("#orgUnitTree").empty();
+		const user = $("#hmisUser").val();
+		const pass = $("#hmisPass").val();
+
+		if (!user || !pass) {
+			toastr.warning("Enter username and password");
+			return;
+		}
+
+		await loginToTargetSystem(user, pass);
+	});
+
+	$(document).on("click", "#loadData", async function () {
+		$(this).text("Loading...");
+		$("#loadData").prop("disabled", true);
+		await loadSelectedDatasetForm();
+	});
+
+	$(document).on("click", "#showLoginBtn", function () {
+		$("#loginPanel").show();
+		$(this).hide();
+	});
+
+	$(document).on("click", "#hideLoginBtn", function () {
+		$("#loginPanel").hide();
+		$("#showLoginBtn").show();
+	});
+
+	$(document).on("change", "#period", function () {
+		selectedPeriod = $("#period").val();
+	});
+
+	$(document).on("change", "#orgUnitList", async function () {
+		selectedOrgUnit = $("#orgUnitList").val();
+		selectedOrgUnitCode = $("#orgUnitList option:selected").attr("data-code");
+		await getRemoteOrgUnitIdByCode(selectedOrgUnitCode);
+	});
+
+	$(document).on("change", "#datasetList", function () {
+		selectedDataset = $("#datasetList").val();
+		selectedDatasetTitle = $("#datasetList option:selected").text();
+	});
+
+	$(document).on("click", "#submitDataBtn", async function () {
+		await submitData();
+	});
+
+	// Handle orgUnit selection
 	$(document).on("click", ".ou-name", async function () {
 		$(".ou-name").removeClass("selected");
 		$(this).addClass("selected");
-		var id = $(this).data("id");
+		selectedOrgUnit = $(this).data("id");
 		var code = $(this).data("code");
-		//var name = $(this).data("name");
-		//console.log("Selected:", { id, code, name });
-		selectedOrgUnit = id;
-		await getRemoteOrgUnitIdByCode(code);
+
+		if (!code) {
+			toastr.warning(
+				"Selected OrgUnit does not have a code, data will not be submitted to HMIS",
+			);
+		} else {
+			await getRemoteOrgUnitIdByCode(code);
+			console.log(`Resolved orgUnitId: ${hmisOuId}`);
+		}
 	});
 
+	// orgUnit search
 	$("#searchField").on("input", function () {
 		var query = $(this).val().trim().toLowerCase();
 
@@ -759,7 +879,6 @@ $(document).ready(function () {
 			}
 		});
 	});
-	/* End OrgUnit Tree */
 
 	// START
 	init();

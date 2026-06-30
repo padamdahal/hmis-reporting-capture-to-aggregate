@@ -1,143 +1,331 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 	<head>
-		<meta charset="UTF-8">
+		<meta charset="UTF-8" />
 		<title>HMIS Reporting App</title>
-		<link type="text/css" rel="stylesheet" media="screen" href="../../../dhis-web-commons/javascripts/jQuery/ui/css/redmond/jquery-ui.css" />
-		<link type="text/css" rel="stylesheet" media="screen" href="../../../dhis-web-commons/css/light_blue/light_blue.css">
-		<link type="text/css" rel="stylesheet" media="screen,print" href="../../../dhis-web-commons/css/widgets.css" />
-			
-		<script type="text/javascript" src="https://code.jquery.com/jquery-1.12.4.js"></script>
-		<script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/underscore.min.js?_rev=080a9f7"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.util.js?_rev=080a9f7"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.ss.js?_rev=19841"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.ls.js?_rev=19841"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.idb.js?_rev=19841"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.memory.js?_rev=19841"></script>
-		<script type="text/javascript" src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.js?_rev=19841"></script>
+		<link
+			type="text/css"
+			rel="stylesheet"
+			media="screen"
+			href="../../../dhis-web-commons/javascripts/jQuery/ui/css/redmond/jquery-ui.css"
+		/>
+		<link
+			type="text/css"
+			rel="stylesheet"
+			media="screen"
+			href="../../../dhis-web-commons/css/light_blue/light_blue.css"
+		/>
+		<link
+			type="text/css"
+			rel="stylesheet"
+			media="screen,print"
+			href="../../../dhis-web-commons/css/widgets.css"
+		/>
+
+		<script
+			type="text/javascript"
+			src="https://code.jquery.com/jquery-1.12.4.js"
+		></script>
+		<script
+			type="text/javascript"
+			src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/underscore.min.js?_rev=080a9f7"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.util.js?_rev=080a9f7"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.ss.js?_rev=19841"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.ls.js?_rev=19841"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.idb.js?_rev=19841"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.memory.js?_rev=19841"
+		></script>
+		<script
+			type="text/javascript"
+			src="../../../dhis-web-commons/javascripts/dhis2/dhis2.storage.js?_rev=19841"
+		></script>
 		<script type="text/javascript" src="js/ouwt.js"></script>
-		<script type="text/javascript" src="js/nepali.datepicker.v5.0.6.min.js"></script>
+		<script
+			type="text/javascript"
+			src="js/nepali.datepicker.v5.0.6.min.js"
+		></script>
 
 		<!-- Toastr -->
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+		<link
+			rel="stylesheet"
+			href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+		/>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-	
+
 		<style>
-			body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0;color:#333; }
-			#sidebar { width: 260px; background: #efefef; height:100vh; position:fixed; overflow-y:auto; padding:20px; box-sizing:border-box; }
-			#content { margin-left:280px; padding:20px; min-height:100vh; }
-			#sidebar h3 { margin-top:0; margin-bottom:10px;font-weight:500; }
-			#sidebar input, #sidebar select { width:100%; padding:6px; margin:4px 0; border-radius:4px; border:1px solid #ccc; }
-			#sidebar button { width:100%; padding:8px;border:none; border-radius:4px; background:#4caf50; color:#fff; cursor:pointer; }
-			#sidebar button:hover { background:#45a049; }
-			#datasetList li { background:#3c4a63; padding:10px; margin-bottom:10px; border-radius:6px; cursor:pointer; transition: background 0.2s; list-style:none; }
-			#datasetList li:hover { background:#50607a; }
-			#loginError { color:#ff5722; margin:6px 0; display:none; font-size:0.9em; }
-			#mainFormContainer { margin-top:20px; }
-			#mainFormContainer table { border-collapse:collapse; }
-			#submitDataBtn { background:#2196f3; color:#fff; border-radius:4px; padding:10px 16px; border:none; cursor:pointer; }
-			#submitDataBtn:hover { background:#1976d2; }
-			#submissionStatus, #submitBtnContainer{max-width:450px;border:1px solid #a4d2a3;background-color:#d0eBd0;padding-top: 10px;padding-bottom: 10px;padding-left: 10px;margin-bottom: 15px;margin-top:20px; border-radius: 3px;}
-			#msgContent h4{margin:5px 0;}
+			body {
+				font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+				margin: 0;
+				color: #333;
+			}
+			#sidebar {
+				width: 260px;
+				background: #efefef;
+				height: 100vh;
+				position: fixed;
+				overflow-y: auto;
+				padding: 20px;
+				box-sizing: border-box;
+			}
+			#content {
+				margin-left: 280px;
+				padding: 20px;
+				min-height: 100vh;
+			}
+			#sidebar h3 {
+				margin-top: 0;
+				margin-bottom: 10px;
+				font-weight: 500;
+			}
+			#sidebar input,
+			#sidebar select {
+				width: 100%;
+				padding: 6px;
+				margin: 4px 0;
+				border-radius: 4px;
+				border: 1px solid #ccc;
+			}
+			#sidebar button {
+				width: 100%;
+				padding: 8px;
+				border: none;
+				border-radius: 4px;
+				background: #4caf50;
+				color: #fff;
+				cursor: pointer;
+			}
+			#sidebar button:hover {
+				background: #45a049;
+			}
+			#datasetList li {
+				background: #3c4a63;
+				padding: 10px;
+				margin-bottom: 10px;
+				border-radius: 6px;
+				cursor: pointer;
+				transition: background 0.2s;
+				list-style: none;
+			}
+			#datasetList li:hover {
+				background: #50607a;
+			}
+			#loginError {
+				color: #ff5722;
+				margin: 6px 0;
+				display: none;
+				font-size: 0.9em;
+			}
+			#mainFormContainer {
+				margin-top: 20px;
+			}
+			#mainFormContainer table {
+				border-collapse: collapse;
+			}
+			#submitDataBtn {
+				background: #2196f3;
+				color: #fff;
+				border-radius: 4px;
+				padding: 10px 16px;
+				border: none;
+				cursor: pointer;
+			}
+			#submitDataBtn:hover {
+				background: #1976d2;
+			}
+			#submissionStatus,
+			#submitBtnContainer {
+				max-width: 450px;
+				border: 1px solid #a4d2a3;
+				background-color: #d0ebd0;
+				padding-top: 10px;
+				padding-bottom: 10px;
+				padding-left: 10px;
+				margin-bottom: 15px;
+				margin-top: 20px;
+				border-radius: 3px;
+			}
+			#msgContent h4 {
+				margin: 5px 0;
+			}
 
 			/* OU Tree */
-			.ou-tree  { list-style: none; margin: 0; padding: 0; font-size: 13px; }
-			.ou-item  { background:none !important;padding:0 !important;margin: 0; }
-			.ou-row   { display: flex; align-items: center; gap: 2px; padding: 1px 4px; cursor: pointer; border-radius: 3px; }
-			.ou-row:hover { background:none; }
-			.ou-toggle { font-size: 14px; color: #555; flex-shrink: 0; }
-			.ou-children { padding-left: 5px; border-left: 1px solid #ddd; margin-left: 7px; }
+			.ou-tree {
+				list-style: none;
+				margin: 0;
+				padding: 0;
+				font-size: 13px;
+			}
+			.ou-item {
+				background: none !important;
+				padding: 0 !important;
+				margin: 0;
+			}
+			.ou-row {
+				display: flex;
+				align-items: center;
+				gap: 2px;
+				padding: 1px 4px;
+				cursor: pointer;
+				border-radius: 3px;
+			}
+			.ou-row:hover {
+				background: none;
+			}
+			.ou-toggle {
+				font-size: 14px;
+				color: #555;
+				flex-shrink: 0;
+			}
+			.ou-children {
+				padding-left: 5px;
+				border-left: 1px solid #ddd;
+				margin-left: 7px;
+			}
 
 			/* Level colors matching screenshot */
-			.ou-root  > .ou-row > .ou-name { color: #cc0000; font-weight: bold; }
-			.ou-level-1 > .ou-row > .ou-name { color: #cc6600; }
-			.ou-name.selected { color: #0055cc !important; }
+			.ou-root > .ou-row > .ou-name {
+				color: #cc0000;
+				font-weight: bold;
+			}
+			.ou-level-1 > .ou-row > .ou-name {
+				color: #cc6600;
+			}
+			.ou-name.selected {
+				color: #0055cc !important;
+			}
 		</style>
 	</head>
 	<body>
-
 		<div id="sidebar">
 			<div id="titlePanel">
-				<h3>HMIS Reporting <div id="hmisBaseUrl" style="font-size:10px;color:#888"></div></h3>
-				
+				<h3>
+					HMIS Reporting
+					<div id="hmisBaseUrl" style="font-size: 10px; color: #888"></div>
+				</h3>
 			</div>
-			
-			<div id="loginPanelContainer" style="padding:10px;border:1px solid #a4d2a3;border-radius:4px;">
-				<div style="padding-bottom:5px;">HMIS Login</div>
+
+			<div
+				id="loginPanelContainer"
+				style="padding: 10px; border: 1px solid #a4d2a3; border-radius: 4px"
+			>
+				<!--div style="padding-bottom:5px;">HMIS Login <button id="btnLogin">Login with HMIS</button></div-->
 				<div id="loginPanel">
-					<input type="text" id="hmisUser" placeholder="Username" style="width:auto;">
-					<input type="password" id="hmisPass" placeholder="Password" style="width:auto;">
+					<input
+						type="text"
+						id="hmisUser"
+						placeholder="Username"
+						style="width: auto"
+					/>
+					<input
+						type="password"
+						id="hmisPass"
+						placeholder="Password"
+						style="width: auto"
+					/>
 					<div id="loginError"></div>
-					<button id="loginBtn" style="width:50%">Next</button> <a href="#" id="hideLoginBtn">Hide</a>
+					<button id="loginBtn" style="width: 50%">Next</button>
+					<a href="#" id="hideLoginBtn">Hide</a>
 				</div>
-				<button id="showLoginBtn" style="display:none;">Show Login</button>
+				<button id="showLoginBtn" style="display: none">Show Login</button>
 			</div>
-			
-			<div id="dataSetPanel" style="display:block;position:relative;margin-top:15px;">				
-			  <h3>Data Set</h3>
-			  <select id="datasetList">
-				<option value="">Select a dataset</option>
-			  </select>
+
+			<div
+				id="dataSetPanel"
+				style="display: block; position: relative; margin-top: 15px"
+			>
+				<h3>Data Set</h3>
+				<select id="datasetList">
+					<option value="">Select a dataset</option>
+				</select>
 			</div>
-			
-			<div id="ouPanel" style="display:block;position:relative;margin-top:15px;">
-			  	<h3>Organisation Unit</h3>
-			  	
-			  	<div id="orgUnits">
-					<select id="orgUnitList"><option value="">Select OrgUnit</option></select>
+
+			<div
+				id="ouPanel"
+				style="display: block; position: relative; margin-top: 15px"
+			>
+				<h3>Organisation Unit</h3>
+
+				<div id="orgUnits">
+					<!--select id="orgUnitList">
+						<option value="">Select OrgUnit</option>
+					</select>
 					<div>
-						<input id="searchField" type="text" placeholder="Search OrgUnit" style="width:95%;height:10px"/>
-					</div>
+						<input id="searchField" type="text" placeholder="Search OrgUnit" style="width: 95%; height: 10px"/>
+					</div-->
 
 					<div id="orgUnitTreeContainer">
-						<img id="ouwt_loader" src="../../../images/ajax-loader-bar.gif"/>
-						<div id="orgUnitTree" style="width:100%;height:200px;border: 1px solid #aaa;">
+						<img id="ouwt_loader" src="../../../images/ajax-loader-bar.gif" />
+						<div id="orgUnitTree" style="width: 100%; height: 200px; border: 1px solid #aaa">
 							<ul></ul>
 						</div>
 					</div>
-			 	 </div>
+				</div>
 			</div>
-			
-			<div id="periodPanel" style="margin-top:10px;">
-			  <h3>Reporting Period</h3>
-			  <select id="period" style="width:55%">
-				<option value="-">Select Period</option>
-			  </select>
-			  <a id="prev" href="#" style="font-size:20px">&larr;</a>&nbsp;&nbsp;&nbsp;<a id="next" href="#" style="font-size:20px">&rarr;</a>
+
+			<div id="periodPanel" style="margin-top: 10px">
+				<h3>Reporting Period</h3>
+				<select id="period" style="width: 55%">
+					<option value="-">Select Period</option>
+				</select>
+				<a id="prev" href="#" style="font-size: 20px">&larr;</a>&nbsp;&nbsp;&nbsp;<a id="next" href="#" style="font-size: 20px"
+					>&rarr;</a
+				>
 			</div>
-			
+
 			<div id="loadButtonPanel">
-			  <button id="loadData">Load Data</button>
+				<button id="loadData">Load Data</button>
 			</div>
-			
 		</div>
 
 		<div id="content">
-			<div id="mainContent" style="background:#fff;">
-				<h2 id="datasetTitle" style="margin:0"></h2>
-				<div id="mainFormContainer"><img src="img/pulse.gif"/></div>
+			<div id="mainContent" style="background: #fff">
+				<h2 id="datasetTitle" style="margin: 0"></h2>
+				<div id="mainFormContainer"><img src="img/pulse.gif" /></div>
 				<div id="submissionStatus"></div>
 				<div id="submitBtnContainer">
 					<button type="button" id="submitDataBtn">Submit to HMIS</button>
 				</div>
 			</div>
-			<div id="msgContent" style="background:#fff;">
+			<div id="msgContent" style="background: #fff">
 				<h3>Quick User Guide</h3>
 				<h4>Login</h4>
-				आफ्नो HMIS प्रयोगकर्ता नाम र पासवर्ड प्रविष्ट गर्नुहोस्। Next बटनमा क्लिक गर्नुहोस्। 
+				आफ्नो HMIS प्रयोगकर्ता नाम र पासवर्ड प्रविष्ट गर्नुहोस्। Next बटनमा
+				क्लिक गर्नुहोस्।
 				<h4>Select Organisation Unit</h4>
 				सूचीबाट आफ्नो स्वास्थ्य संस्था छान्नुहोस्।
 				<h4>Select Dataset and Period</h4>
 				आवश्यक डाटासेट चयन गर्नुहोस्। रिपोर्टिङ अवधि (वर्ष र महिना) छान्नुहोस्।
 				<h4>Load Data</h4>
-				Load बटनमा क्लिक गर्नुहोस्। फारम खुल्नेछ र उपलब्ध डाटा स्वचालित रूपमा भरिनेछ।
+				Load बटनमा क्लिक गर्नुहोस्। फारम खुल्नेछ र उपलब्ध डाटा स्वचालित रूपमा
+				भरिनेछ।
 				<h4>Review Submission Status</h4>
-				यदि डाटा पहिले नै पठाइएको छ भने, मिति र प्रयोगकर्ता देखाइनेछ। यदि पठाइएको छैन भने, तपाईंले अगाडि बढ्न सक्नुहुन्छ।
+				यदि डाटा पहिले नै पठाइएको छ भने, मिति र प्रयोगकर्ता देखाइनेछ। यदि
+				पठाइएको छैन भने, तपाईंले अगाडि बढ्न सक्नुहुन्छ।
 				<h4>Submit Data</h4>
 				Submit to HMIS बटनमा क्लिक गरी HMIS मा डाटा पठाउनुहोस्।
 				<h4>Notes</h4>
-				डाटा लोड गर्नु अघि संस्था सही छानिएको छ कि छैन सुनिश्चित गर्नुहोस्। सबमिशन भइरहेको बेला पेज रिफ्रेस नगर्नुहोस्। लगइन समस्या आएमा पुनः प्रयोगकर्ता नाम र पासवर्ड प्रविष्ट गर्नुहोस्।
+				डाटा लोड गर्नु अघि संस्था सही छानिएको छ कि छैन सुनिश्चित गर्नुहोस्।
+				सबमिशन भइरहेको बेला पेज रिफ्रेस नगर्नुहोस्। लगइन समस्या आएमा पुनः
+				प्रयोगकर्ता नाम र पासवर्ड प्रविष्ट गर्नुहोस्।
 			</div>
 		</div>
 		<script type="text/javascript" src="js/index.js"></script>
