@@ -3,8 +3,25 @@ $(document).ready(function () {
 
 	const npMonth = todayNP.month - 1 == 0 ? 12 : todayNP.month;
 	const npYear = todayNP.month - 1 == 0 ? todayNP.year - 1 : todayNP.year;
+	
+	let host = window.location.origin;
+	const provincialInstances = [
+		"koshi.hmis.gov.np",
+		"lumbini.hmis.gov.np",
+		"madhesh.hmis.gov.np",
+		"bagmati.hmis.gov.np",
+		"gandaki.hmis.gov.np",
+		"karnali.hmis.gov.np",
+		"sudurpaschim.hmis.gov.np"
+	];
 
-	const hmisBaseUrl = "https://hmis.gov.np/hmisdemo";
+	let hmisBaseUrl = null;
+	if (provincialInstances.some(instance => host.includes(instance))) {
+		hmisBaseUrl = "https://hmis.gov.np/hmis";
+	}else{
+		hmisBaseUrl = "https://hmis.gov.np/hmisdemo";
+	}
+	
 	$("#hmisBaseUrl").html(hmisBaseUrl);
 
 	let baseUrl = window.location.origin;
