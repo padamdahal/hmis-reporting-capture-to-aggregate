@@ -12,7 +12,7 @@ $(document).ready(function () {
 		"bagmati.hmis.gov.np",
 		"gandaki.hmis.gov.np",
 		"karnali.hmis.gov.np",
-		"sudurpaschim.hmis.gov.np"
+		"sudurpashchim.hmis.gov.np"
 	];
 
 	let hmisBaseUrl = null;
