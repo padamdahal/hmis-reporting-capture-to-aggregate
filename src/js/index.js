@@ -282,7 +282,7 @@ $(document).ready(function () {
 	}
 
 	async function apiGet(url, options = {}) {
-		console.log(options);
+			
 		return $.ajax({
 			url,
 			method: "GET",
@@ -291,9 +291,9 @@ $(document).ready(function () {
 			timeout: options.timeout || 10000,
 		}).fail(function (xhr, textStatus) {
 			if (textStatus === "timeout") {
-				toastr.error(`Request timed out: ${url}`, "Request Timed Out");
+				console.log(`Request timed out: ${url}`, "Request Timed Out");
 			} else {
-				toastr.error(`Error getting data: ${url}`, "Error");
+				console.log(`Error getting data: ${url}`, "Error");
 			}
 		});
 	}
@@ -308,9 +308,9 @@ $(document).ready(function () {
 			data: JSON.stringify(data),
 		}).fail(function (xhr, textStatus) {
 			if (textStatus === "timeout") {
-				toastr.error("Request timed out:", url);
+				toastr.error("Request timed out, please wait a while or try again later.");
 			} else {
-				toastr.error(`${xhr.responseText}`, "Error Submitting Data");
+				toastr.error("Something unexpected happened while submitting your data. Please try again later or ask for technical support."); //`${xhr.responseText}`, 
 			}
 		});
 	}
@@ -388,7 +388,7 @@ $(document).ready(function () {
 				await getRemoteOrgUnitIdByCode(res.code);
 			}
 		} catch (e) {
-			toastr.error("Error getting selected OrgUnit info...");
+			console.log("Error getting selected OrgUnit info...");
 		}
 	}
 
@@ -460,7 +460,7 @@ $(document).ready(function () {
 
 			programIndicators = res.programIndicators;
 		} catch (e) {
-				toastr.error("Error getting program indicators.");
+				console.log("Error getting program indicators.");
 		}
 	}
 
@@ -621,7 +621,7 @@ $(document).ready(function () {
 			};
 			console.log(finalJSON);
 		} catch (e) {
-				toastr.error("Error getting program indicator data...");
+				console.log("Error getting program indicator data...");
 		}
 	}
 
@@ -819,10 +819,14 @@ $(document).ready(function () {
 	});
 
 	$(document).on("click", "#loadData", async function () {
+		if(!selectedOrgUnit){
+			toastr.error("Please select an OrgUnit")
+		}else{
+			$(this).text("Loading...");
+			$("#loadData").prop("disabled", true);
+			await loadSelectedDatasetForm();
+		}
 		
-		$(this).text("Loading...");
-		$("#loadData").prop("disabled", true);
-		await loadSelectedDatasetForm();
 	});
 
 	$(document).on("click", "#showLoginBtn", function () {
