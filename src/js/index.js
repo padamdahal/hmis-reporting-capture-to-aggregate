@@ -68,7 +68,7 @@ $(document).ready(function () {
 	});*/
 
 	/* OAuth */
-	var OAUTH = {
+	/*var OAUTH = {
 		clientId: "ephc",
 		clientSecret: "f9c016052-c436-6d9b-0f4c-e3c0d0dd6fa",
 		baseUrl: hmisBaseUrl,
@@ -102,7 +102,7 @@ $(document).ready(function () {
 			timeout: 10000,
 		});
 	} else {
-	}
+	}*/
 
 	$(document).on("click", "#btnLogin", function () {
 		var state = Math.random().toString(36).substring(2);
@@ -121,7 +121,7 @@ $(document).ready(function () {
 	});
 
 	// ── Handle callback — exchange code for token ──
-	function handleOAuthCallback(code, state) {
+	/*function handleOAuthCallback(code, state) {
 		var savedState = sessionStorage.getItem("oauth_state");
 
 		if (state !== savedState) {
@@ -140,7 +140,7 @@ $(document).ready(function () {
 			url: "https://ocl.hmis.gov.np/ephc/api/42/routes/LCNvyLXukMq/run",
 			method: "POST",
 			headers: {
-				/*'Authorization': 'Basic ' + btoa(OAUTH.clientId + ':' + OAUTH.clientSecret),*/
+				//'Authorization': 'Basic ' + btoa(OAUTH.clientId + ':' + OAUTH.clientSecret),
 				"Content-Type": "application/x-www-form-urlencoded",
 			},
 			data: {
@@ -217,13 +217,13 @@ $(document).ready(function () {
 	$(document).ajaxSend(function () {
 		if (isTokenExpired()) refreshAccessToken();
 	});
-
+*/
 	// ── Logout ──
-	function logout() {
+	/*function logout() {
 		sessionStorage.clear();
 		$.ajaxSetup({ headers: {} });
 		showLogin();
-	}
+	}*/
 	/* End OAuth */
 
 	async function init() {
@@ -460,7 +460,7 @@ $(document).ready(function () {
 
 			programIndicators = res.programIndicators;
 		} catch (e) {
-			showError("Error getting program indicators.");
+				toastr.error("Error getting program indicators.");
 		}
 	}
 
@@ -503,15 +503,17 @@ $(document).ready(function () {
 			$("#loadData").text("Load Data");
 			$("#loadData").prop("disabled", false);
 		} catch (e) {
-			showError("Error loading dataset.");
+				toastr.error("Error loading dataset.");
 		}
 	}
 
 	async function fillLocalData() {
 		toastr.info("Please wait, populating data...");
+		
 		const inputs = $("#mainFormContainer").find(
 			"input[id], select[id], textarea[id]",
 		);
+		
 		const piIdsToQuery = [];
 
 		console.log("Filtering program indicators to fetch data...");
@@ -574,13 +576,25 @@ $(document).ready(function () {
 				const dataValue = parseInt(row[1]);
 
 				const pi = programIndicators.find((p) => p.id === dataPi);
-				const cocId = pi.aggregateExportCategoryOptionCombo;
-
-				const filteredPi = pi.attributeValues.find(
-					(av) => av.attribute.id === "b8KbU93phhz",
-				);
-
-				const deId = filteredPi ? filteredPi.value : null;
+				const piAggregateExportCategoryOptionComboValue = pi.aggregateExportCategoryOptionCombo;
+				let deId = null;
+				let cocId = null;
+				
+				// Check if the piAggregateExportCategoryOptionComboValue is in the format "deId-cocId"
+				const cocIdPattern = /^.+-.+$/;
+				if(cocIdPattern.test(piAggregateExportCategoryOptionComboValue)){
+					//Priority 1: true
+					deId = piAggregateExportCategoryOptionComboValue.split("-")[0];
+					cocId = piAggregateExportCategoryOptionComboValue.split("-")[1];
+				}else{
+					// Priority 2: fallback to custom attribute check	
+					const filteredPi = pi.attributeValues.find(
+						(av) => av.attribute.id === "b8KbU93phhz",
+					);
+					deId = filteredPi ? filteredPi.value : null;
+					cocId = piAggregateExportCategoryOptionComboValue;
+				}
+				
 				const el = document.getElementById(`${deId}-${cocId}-val`);
 
 				if (el) {
@@ -607,7 +621,7 @@ $(document).ready(function () {
 			};
 			console.log(finalJSON);
 		} catch (e) {
-			showError("Error getting program indicator data...");
+				toastr.error("Error getting program indicator data...");
 		}
 	}
 
@@ -656,7 +670,7 @@ $(document).ready(function () {
 				$("#submissionStatus").html(`<div>Not yet submitted</div>`);
 			}
 		} catch (e) {
-			showError("Error checking completeness");
+				toastr.error("Error checking completeness");
 		}
 	}
 
@@ -805,6 +819,7 @@ $(document).ready(function () {
 	});
 
 	$(document).on("click", "#loadData", async function () {
+		
 		$(this).text("Loading...");
 		$("#loadData").prop("disabled", true);
 		await loadSelectedDatasetForm();
