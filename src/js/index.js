@@ -282,13 +282,12 @@ $(document).ready(function () {
 	}
 
 	async function apiGet(url, options = {}) {
-			
 		return $.ajax({
 			url,
 			method: "GET",
 			contentType: options.contentType || "application/json",
 			headers: options.headers || {},
-			timeout: options.timeout || 10000,
+			timeout: options.timeout || 60000,
 		}).fail(function (xhr, textStatus) {
 			if (textStatus === "timeout") {
 				console.log(`Request timed out: ${url}`, "Request Timed Out");
@@ -503,7 +502,9 @@ $(document).ready(function () {
 			$("#loadData").text("Load Data");
 			$("#loadData").prop("disabled", false);
 		} catch (e) {
-				toastr.error("Error loading dataset.");
+				toastr.error("Error loading dataset, please ask for technical support");
+				$("#loadData").text("Load Data");
+				$("#loadData").prop("disabled", false);
 		}
 	}
 
@@ -647,19 +648,15 @@ $(document).ready(function () {
 	async function checkDatasetCompleteness() {
 		try {
 			console.log("Checking data set status...");
-
 			if (!selectedDataset || !hmisOuId || !selectedPeriod) {
-				console.log("Missing parameters...");
+				console.log("Can not check completeness, missing parameters...");
 				return;
 			}
 
 			//const orgUnit = $("#orgUnitList").val();
 			const url = `${hmisBaseUrl}/api/completeDataSetRegistrations?dataSet=${selectedDataset}&period=${selectedPeriod}&orgUnit=${hmisOuId}`;
 			const res = await apiGet(url, { headers: getAuthHeader() });
-			if (
-				res.completeDataSetRegistrations &&
-				res.completeDataSetRegistrations.length > 0
-			) {
+			if (res.completeDataSetRegistrations && res.completeDataSetRegistrations.length > 0) {
 				const cds = res.completeDataSetRegistrations[0];
 				const completedDate = cds.date || "NA";
 				const completedBy = cds.storedBy || "NA";
