@@ -838,6 +838,7 @@ $(document).ready(function () {
 
 	$(document).on("change", "#period", function () {
 		selectedPeriod = $("#period").val();
+		selectedPeriodName = $("#period option:selected").text();
 	});
 
 	$(document).on("change", "#orgUnitList", async function () {
